@@ -1,0 +1,12 @@
+{
+  "name": "last-stand",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Last Stand — zombie survival shooter (static web game).",
+  "scripts": {
+    "start": "serve -s . -l ${PORT:-8099}"
+  },
+  "dependencies": {
+    "serve": "^14.2.4"
+  }
+}
