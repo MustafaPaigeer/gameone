@@ -74,101 +74,127 @@ export class UI {
   openShop() {
     this.el.shop.classList.remove("hidden");
     this.el.shopWave.textContent = this.game.wave;
+    const nextWaveEl = document.getElementById("shop-next-wave");
+    if (nextWaveEl) nextWaveEl.textContent = this.game.wave + 1;
     this.renderShop();
+  }
+
+  // A small dot meter showing how many levels of an upgrade you've earned.
+  pips(filled, total) {
+    let s = '<span class="card-pips">';
+    for (let i = 0; i < total; i++) {
+      s += `<span class="pip${i < filled ? " on" : ""}"></span>`;
+    }
+    return s + "</span>";
   }
 
   renderShop() {
     const g = this.game;
     this.el.shopCoins.textContent = g.coins;
+    const fullHp = g.player.health >= g.player.maxHealth;
     const items = [];
 
-    // Next weapon tier
+    // Next weapon tier — the headline purchase.
     const curIdx = WEAPONS.findIndex((w) => w.id === g.weaponId);
     const next = WEAPONS[curIdx + 1];
     if (next) {
       items.push({
-        emoji: next.emoji,
-        name: next.name,
-        desc: next.desc,
-        cost: next.unlockCost,
-        level: "NEW WEAPON",
+        emoji: next.emoji, name: next.name, desc: next.desc,
+        cost: next.unlockCost, badge: "NEW WEAPON",
+        meta: `Upgrade from ${getWeapon(g.weaponId).name}`,
         action: () => g.buyWeapon(next.id),
       });
     } else {
       items.push({
-        emoji: "⚙️",
-        name: "Max Weapon",
-        desc: "Top-tier firepower owned.",
-        maxed: true,
-        level: getWeapon(g.weaponId).name,
+        emoji: "⚙️", name: getWeapon(g.weaponId).name,
+        desc: "Top-tier firepower equipped.", maxed: true,
+        meta: "Best weapon owned",
       });
     }
 
     items.push({
-      emoji: "⬆️",
-      name: "Damage +25%",
-      desc: "More punch per bullet.",
-      cost: g.upgradeCost("damage"),
-      level: `Lv ${g.boosts.damageLvl}`,
+      emoji: "⬆️", name: "Damage", desc: "+25% damage per shot",
+      cost: g.upgradeCost("damage"), meta: this.pips(g.boosts.damageLvl, 6),
       action: () => g.buyUpgrade("damage"),
     });
     items.push({
-      emoji: "🔥",
-      name: "Fire Rate +18%",
-      desc: "Shoot faster.",
-      cost: g.upgradeCost("firerate"),
-      level: `Lv ${g.boosts.fireRateLvl}`,
+      emoji: "🔥", name: "Fire Rate", desc: "+18% shots per second",
+      cost: g.upgradeCost("firerate"), meta: this.pips(g.boosts.fireRateLvl, 6),
       action: () => g.buyUpgrade("firerate"),
     });
     items.push({
-      emoji: "👥",
-      name: "Add Soldier",
-      desc: "Another gun in the squad.",
-      cost: g.upgradeCost("squad"),
-      level: g.player.squadSize >= 5 ? "MAX" : `${g.player.squadSize}/5`,
+      emoji: "👥", name: "Squad Size", desc: "Add another shooter",
+      cost: g.upgradeCost("squad"), meta: this.pips(g.player.squadSize - 1, 4),
       maxed: g.player.squadSize >= 5,
       action: () => g.buyUpgrade("squad"),
     });
     items.push({
-      emoji: "❤️",
-      name: "Full Heal",
-      desc: "Restore all health.",
-      cost: g.upgradeCost("heal"),
-      level: `${Math.round(g.player.health)}/${g.player.maxHealth}`,
+      emoji: "❤️", name: "Repair", desc: "Restore full health",
+      cost: g.upgradeCost("heal"), meta: `${Math.round(g.player.health)}/${g.player.maxHealth} HP`,
+      disabled: fullHp, disabledLabel: "Full HP",
       action: () => g.buyUpgrade("heal"),
     });
     items.push({
-      emoji: "🛡️",
-      name: "Max HP +25",
-      desc: "Tougher squad.",
-      cost: g.upgradeCost("maxhp"),
-      level: `${g.player.maxHealth} HP`,
+      emoji: "🛡️", name: "Max Health", desc: "+25 maximum HP",
+      cost: g.upgradeCost("maxhp"), meta: `${g.player.maxHealth} HP cap`,
       action: () => g.buyUpgrade("maxhp"),
     });
 
     this.el.shopItems.innerHTML = "";
     for (const item of items) {
-      const div = document.createElement("div");
-      div.className = "shop-item";
-      const affordable = !item.maxed && item.cost != null && g.coins >= item.cost;
-      if (item.maxed) div.classList.add("maxed");
-      else if (affordable) div.classList.add("affordable");
-      else if (item.cost != null) div.classList.add("locked");
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "shop-card";
 
-      div.innerHTML = `
-        <span class="shop-item-emoji">${item.emoji}</span>
-        <span class="shop-item-name">${item.name}</span>
-        <span class="shop-item-desc">${item.desc}</span>
-        <span class="shop-item-level">${item.level || ""}</span>
-        ${item.maxed ? "" : `<div class="shop-item-cost">🪙 ${item.cost}</div>`}
+      const affordable = !item.maxed && !item.disabled && g.coins >= item.cost;
+      let buyHtml;
+      if (item.maxed) {
+        card.classList.add("maxed");
+        card.disabled = true;
+        buyHtml = `<span class="card-buy maxed">Maxed</span>`;
+      } else if (item.disabled) {
+        card.classList.add("locked");
+        card.disabled = true;
+        buyHtml = `<span class="card-buy off">${item.disabledLabel}</span>`;
+      } else if (affordable) {
+        card.classList.add("affordable");
+        buyHtml = `<span class="card-buy can">Buy <b>🪙 ${item.cost}</b></span>`;
+      } else {
+        card.classList.add("locked");
+        card.disabled = true;
+        const need = item.cost - g.coins;
+        buyHtml = `<span class="card-buy off">Need 🪙 ${need} more</span>`;
+      }
+
+      card.innerHTML = `
+        <span class="card-top">
+          <span class="card-icon">${item.emoji}</span>
+          ${item.badge ? `<span class="card-badge">${item.badge}</span>` : ""}
+        </span>
+        <span class="card-name">${item.name}</span>
+        <span class="card-desc">${item.desc}</span>
+        <span class="card-meta">${item.meta || ""}</span>
+        ${buyHtml}
       `;
-      if (!item.maxed && item.action) {
-        div.addEventListener("click", () => {
-          if (item.action()) this.renderShop();
+
+      if (affordable && item.action) {
+        card.addEventListener("click", () => {
+          if (item.action()) {
+            this.flashCoins();
+            this.renderShop();
+          }
         });
       }
-      this.el.shopItems.appendChild(div);
+      this.el.shopItems.appendChild(card);
     }
+  }
+
+  // One restrained motion beat: the balance pulses when coins are spent.
+  flashCoins() {
+    const el = this.el.shopCoins;
+    el.classList.remove("spent");
+    void el.offsetWidth; // restart the animation
+    el.classList.add("spent");
   }
 
   closeShop() {

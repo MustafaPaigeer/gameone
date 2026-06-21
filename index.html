@@ -80,11 +80,16 @@
 
     <!-- Upgrade shop (between waves) -->
     <div id="shop" class="overlay hidden">
-      <div class="panel wide">
-        <h2 class="panel-title">WAVE&nbsp;<span id="shop-wave">1</span> CLEARED</h2>
-        <p class="panel-coins">🪙 <span id="shop-coins">0</span></p>
+      <div class="panel wide shop-panel">
+        <p class="shop-eyebrow">WAVE&nbsp;<span id="shop-wave">1</span> HELD · REARM</p>
+        <div class="wallet">
+          <span class="wallet-coin">🪙</span>
+          <span class="wallet-amount" id="shop-coins">0</span>
+          <span class="wallet-label">coins to spend</span>
+        </div>
+        <p class="shop-instruction">Tap <strong>Buy</strong> to spend coins before the horde returns.</p>
         <div id="shop-items" class="shop-grid"></div>
-        <button id="next-wave-btn" class="big-btn">NEXT WAVE ▶</button>
+        <button id="next-wave-btn" class="big-btn">DEPLOY → WAVE <span id="shop-next-wave">2</span></button>
       </div>
     </div>
 
