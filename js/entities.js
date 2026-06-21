@@ -9,6 +9,7 @@ export class Bullet {
   constructor(x, y, vx, vy, damage, color) {
     this.id = nextId();
     this.x = x; this.y = y;
+    this.px = x; this.py = y;   // previous position, for swept collision
     this.vx = vx; this.vy = vy;
     this.damage = damage;
     this.color = color;
@@ -16,6 +17,7 @@ export class Bullet {
     this.dead = false;
   }
   update(dt) {
+    this.px = this.x; this.py = this.y;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     if (this.y < -20 || this.x < -20 || this.x > 9999) this.dead = true;
@@ -35,7 +37,7 @@ export class Bullet {
 
 // ---------------------------------------------------------------- Zombie
 export class Zombie {
-  constructor(type, x, y, hpScale, speedScale) {
+  constructor(type, x, y, hpScale, speedScale, damageScale = 1) {
     const t = ZOMBIE_TYPES[type];
     this.id = nextId();
     this.type = type;
@@ -44,7 +46,7 @@ export class Zombie {
     this.hp = this.maxHp;
     this.speed = t.speed * speedScale;
     this.radius = t.radius;
-    this.damage = t.damage;
+    this.damage = Math.round(t.damage * damageScale);
     this.coins = t.coins;
     this.emoji = t.emoji;
     this.color = t.color;

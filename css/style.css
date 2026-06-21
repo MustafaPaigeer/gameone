@@ -179,7 +179,10 @@ html, body {
   justify-content: center;
   background: radial-gradient(ellipse at center, rgba(10,14,26,0.7), rgba(0,0,0,0.92));
   backdrop-filter: blur(3px);
-  padding: 20px;
+  padding: 16px;
+  /* Allow the overlay itself to scroll if a panel is taller than the screen. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .panel {
@@ -191,8 +194,20 @@ html, body {
   max-width: 440px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  /* margin:auto keeps the panel centred when it fits but lets the user scroll
+     to BOTH ends when it doesn't (a flex child clipped at the top otherwise). */
+  margin: auto;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .panel.wide { max-width: 560px; }
+
+/* Keep the primary action reachable on short screens: the shop body scrolls
+   while the "Next Wave" button stays pinned to the bottom of the panel. */
+#shop .panel { overflow: hidden; }
+#shop-items { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1 1 auto; }
+#next-wave-btn { flex: 0 0 auto; margin-bottom: 0; }
 
 .title {
   font-size: clamp(40px, 12vw, 64px);

@@ -108,7 +108,7 @@ export class UI {
       emoji: "⬆️",
       name: "Damage +25%",
       desc: "More punch per bullet.",
-      cost: 60 + g.boosts.damageLvl * 55,
+      cost: g.upgradeCost("damage"),
       level: `Lv ${g.boosts.damageLvl}`,
       action: () => g.buyUpgrade("damage"),
     });
@@ -116,7 +116,7 @@ export class UI {
       emoji: "🔥",
       name: "Fire Rate +18%",
       desc: "Shoot faster.",
-      cost: 60 + g.boosts.fireRateLvl * 55,
+      cost: g.upgradeCost("firerate"),
       level: `Lv ${g.boosts.fireRateLvl}`,
       action: () => g.buyUpgrade("firerate"),
     });
@@ -124,7 +124,7 @@ export class UI {
       emoji: "👥",
       name: "Add Soldier",
       desc: "Another gun in the squad.",
-      cost: 80 + (g.player.squadSize - 1) * 90,
+      cost: g.upgradeCost("squad"),
       level: g.player.squadSize >= 5 ? "MAX" : `${g.player.squadSize}/5`,
       maxed: g.player.squadSize >= 5,
       action: () => g.buyUpgrade("squad"),
@@ -133,7 +133,7 @@ export class UI {
       emoji: "❤️",
       name: "Full Heal",
       desc: "Restore all health.",
-      cost: 50,
+      cost: g.upgradeCost("heal"),
       level: `${Math.round(g.player.health)}/${g.player.maxHealth}`,
       action: () => g.buyUpgrade("heal"),
     });
@@ -141,7 +141,7 @@ export class UI {
       emoji: "🛡️",
       name: "Max HP +25",
       desc: "Tougher squad.",
-      cost: 70,
+      cost: g.upgradeCost("maxhp"),
       level: `${g.player.maxHealth} HP`,
       action: () => g.buyUpgrade("maxhp"),
     });
