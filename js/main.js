@@ -8,6 +8,9 @@ const ui = new UI();
 const game = new Game(canvas, input, ui);
 ui.bind(game);
 
+// Debug handle: inspect or tweak the running game from the browser console.
+window.game = game;
+
 // ---------------------------------------------------------------- buttons
 document.getElementById("start-btn").addEventListener("click", () => {
   game.newRun();

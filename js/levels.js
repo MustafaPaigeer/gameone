@@ -14,20 +14,30 @@ export const ZOMBIE_TYPES = {
 };
 
 // Build the spawn plan for a given wave.
+//
+// The difficulty has to outpace the player's compounding upgrades (weapon tiers,
+// +damage/+fire-rate, up to 5 soldiers). The hard cap on player power is *aim*:
+// bullets fire in a narrow vertical stream from the squad, so the real pressure
+// comes from MANY zombies spread across the road faster than you can sweep to
+// them — hence count and spawn rate ramp aggressively, with a quadratic HP term
+// for the late game so tanky enemies force you to dwell and let others leak.
 export function buildWave(wave) {
   const boss = isBossWave(wave);
-  const hpScale = 1 + (wave - 1) * 0.22;       // zombies get tankier
-  const speedScale = 1 + (wave - 1) * 0.04;    // and a bit faster
-  const baseCount = 8 + wave * 3;
+  const w = wave - 1;
 
-  // Spawn interval shrinks with wave number (more pressure), floored for sanity.
-  const spawnInterval = Math.max(0.28, 1.15 - wave * 0.05);
+  const hpScale = 1 + w * 0.28 + Math.max(0, w - 4) ** 2 * 0.02; // linear + late quadratic
+  const speedScale = Math.min(2.4, 1 + w * 0.05);                // faster, capped
+  const damageScale = 1 + w * 0.07;                              // leaks hurt more over time
+  const baseCount = 8 + Math.floor(wave * 3.5);
 
-  // Type weights drift toward tougher enemies over time.
+  // Spawn interval shrinks with wave number (denser horde), floored for sanity.
+  const spawnInterval = Math.max(0.16, 0.95 - wave * 0.05);
+
+  // Type weights drift toward tougher, harder-to-aim-at enemies over time.
   const weights = {
-    walker: Math.max(1, 6 - wave * 0.3),
-    runner: Math.min(6, 1 + wave * 0.35),
-    brute: Math.min(4, Math.max(0, (wave - 3) * 0.4)),
+    walker: Math.max(1, 6 - wave * 0.35),
+    runner: Math.min(8, 1 + wave * 0.45),
+    brute: Math.min(6, Math.max(0, (wave - 3) * 0.5)),
   };
 
   return {
@@ -35,11 +45,12 @@ export function buildWave(wave) {
     boss,
     hpScale,
     speedScale,
-    count: boss ? baseCount + 6 : baseCount,
+    damageScale,
+    count: boss ? baseCount + 8 : baseCount,
     spawnInterval,
     weights,
-    // Coins awarded just for clearing the wave.
-    clearBonus: 20 + wave * 6,
+    // Coins awarded just for clearing the wave (kept modest to slow the snowball).
+    clearBonus: 15 + wave * 4,
   };
 }
 

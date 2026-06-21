@@ -98,17 +98,23 @@ export class Game {
     this.weaponId = weaponId;
     return true;
   }
+  // Single source of truth for upgrade prices (shared with the shop UI).
+  // Costs grow geometrically so you can't max everything and trivialise the run.
+  upgradeCost(kind) {
+    const maxhpLvl = Math.round((this.player.maxHealth - 100) / 25);
+    switch (kind) {
+      case "damage": return Math.round(60 * Math.pow(1.55, this.boosts.damageLvl));
+      case "firerate": return Math.round(60 * Math.pow(1.55, this.boosts.fireRateLvl));
+      case "squad": return Math.round(120 * Math.pow(1.9, this.player.squadSize - 1));
+      case "heal": return 40;
+      case "maxhp": return Math.round(70 * Math.pow(1.4, maxhpLvl));
+      default: return Infinity;
+    }
+  }
   buyUpgrade(kind) {
-    const costs = {
-      damage: 60 + this.boosts.damageLvl * 55,
-      firerate: 60 + this.boosts.fireRateLvl * 55,
-      squad: 80 + (this.player.squadSize - 1) * 90,
-      heal: 50,
-      maxhp: 70,
-    };
-    const cost = costs[kind];
-    if (this.coins < cost) return false;
     if (kind === "squad" && this.player.squadSize >= 5) return false;
+    const cost = this.upgradeCost(kind);
+    if (this.coins < cost) return false;
     this.coins -= cost;
     if (kind === "damage") this.boosts.damageLvl++;
     else if (kind === "firerate") this.boosts.fireRateLvl++;
@@ -216,7 +222,10 @@ export class Game {
     const type = this.plan.boss && this.spawnedCount === 0 ? "boss" : pickType(this.plan.weights);
     const margin = 40;
     const x = margin + Math.random() * (this.world.w - margin * 2);
-    const z = new Zombie(type, x, this.world.roadTop - 20, this.plan.hpScale, this.plan.speedScale);
+    const z = new Zombie(
+      type, x, this.world.roadTop - 20,
+      this.plan.hpScale, this.plan.speedScale, this.plan.damageScale
+    );
     this.zombies.push(z);
   }
 
@@ -225,8 +234,11 @@ export class Game {
       if (b.dead) continue;
       for (const z of this.zombies) {
         if (z.dead) continue;
-        const dx = b.x - z.x, dy = b.y - z.y;
-        if (dx * dx + dy * dy < z.radius * z.radius) {
+        // Swept test: measure the bullet's whole travel segment this frame
+        // against the zombie so fast bullets can't tunnel through. The hit
+        // radius is padded a little to match the drawn emoji size.
+        const r = z.radius + b.radius + 2;
+        if (segCircleHit(b.px, b.py, b.x, b.y, z.x, z.y, r)) {
           z.hurt(b.damage);
           b.dead = true;
           this.particles.push(new Particle(b.x, b.y, "#ffeb3b"));
@@ -299,4 +311,16 @@ export class Game {
       ctx.stroke();
     }
   }
+}
+
+// Distance from a circle centre (cx,cy) to the closest point on segment A->B,
+// returning true if it is within radius r. Used for swept bullet collision.
+function segCircleHit(ax, ay, bx, by, cx, cy, r) {
+  const abx = bx - ax, aby = by - ay;
+  const len2 = abx * abx + aby * aby;
+  let t = len2 ? ((cx - ax) * abx + (cy - ay) * aby) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const px = ax + abx * t, py = ay + aby * t;
+  const dx = cx - px, dy = cy - py;
+  return dx * dx + dy * dy <= r * r;
 }
