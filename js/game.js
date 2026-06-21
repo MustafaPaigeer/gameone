@@ -34,7 +34,10 @@ export class Game {
     this.world.h = rect.height;
     this.world.roadTop = 40;
     this.world.defenseLine = rect.height - 90;
-    if (this.player) this.player.y = this.world.defenseLine;
+    if (this.player) {
+      this.player.y = this.world.defenseLine;
+      this.player.ty = this.world.defenseLine;
+    }
   }
 
   newRun() {
