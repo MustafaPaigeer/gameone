@@ -64,6 +64,21 @@ requestAnimationFrame(frame);
 // ---------------------------------------------------------------- PWA
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // updateViaCache:"none" makes the browser always revalidate sw.js from the
+    // network, so a new deploy is picked up promptly instead of from HTTP cache.
+    navigator.serviceWorker
+      .register("sw.js", { updateViaCache: "none" })
+      .then((reg) => reg.update())
+      .catch(() => {});
+
+    // When a freshly deployed worker takes control, reload once so the open
+    // page swaps to the new code — users get updates just by reopening.
+    const hadController = !!navigator.serviceWorker.controller;
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing || !hadController) return; // skip the first-ever install
+      refreshing = true;
+      window.location.reload();
+    });
   });
 }
