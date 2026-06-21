@@ -101,25 +101,40 @@ export class Zombie {
 export class Player {
   constructor(x, y) {
     this.x = x; this.y = y;
+    this.tx = x; this.ty = y;   // target the squad eases toward
     this.maxHealth = 100;
     this.health = 100;
-    this.speed = 420;
-    this.squadSize = 1;       // visual soldiers; also small fire-rate bonus
+    this.speed = 620;           // keyboard speed (px/s)
+    this.responsiveness = 26;   // higher = snappier follow (frame-rate independent)
+    this.lift = 30;             // squad sits slightly above the pointer/finger
+    this.squadSize = 1;         // visual soldiers; also small fire-rate bonus
     this.fireCooldown = 0;
-    this.muzzle = 0;          // muzzle-flash timer
+    this.muzzle = 0;            // muzzle-flash timer
     this.hitFlash = 0;
   }
   update(dt, input, world) {
-    // Pointer drag takes priority; otherwise keyboard.
-    if (input.pointerActive && input.pointerX != null) {
-      const targetX = input.pointerX * world.w;
-      const dx = targetX - this.x;
-      this.x += Math.max(-this.speed * dt, Math.min(this.speed * dt, dx));
-    } else {
-      this.x += input.moveDir * this.speed * dt;
-    }
     const margin = 34;
-    this.x = Math.max(margin, Math.min(world.w - margin, this.x));
+    // The squad roams a band — from below the spawn zone down to the wall — so
+    // it can move freely up/down as well as left/right.
+    const moveTop = world.h * 0.22;
+    const moveBottom = world.defenseLine;
+
+    if (input.pointerActive && input.pointerX != null) {
+      // Follow the pointer directly, wherever it was pressed.
+      this.tx = input.pointerX * world.w;
+      this.ty = input.pointerY * world.h - this.lift;
+    } else {
+      this.tx += input.moveX * this.speed * dt;
+      this.ty += input.moveY * this.speed * dt;
+    }
+    this.tx = Math.max(margin, Math.min(world.w - margin, this.tx));
+    this.ty = Math.max(moveTop, Math.min(moveBottom, this.ty));
+
+    // Frame-rate independent smoothing: fast to respond, smooth to watch.
+    const a = 1 - Math.exp(-this.responsiveness * dt);
+    this.x += (this.tx - this.x) * a;
+    this.y += (this.ty - this.y) * a;
+
     if (this.fireCooldown > 0) this.fireCooldown -= dt;
     if (this.muzzle > 0) this.muzzle -= dt;
     if (this.hitFlash > 0) this.hitFlash -= dt;
