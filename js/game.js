@@ -158,8 +158,20 @@ export class Game {
     if (this.spawnedCount < this.plan.count) {
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0) {
-        this.spawnZombie();
-        this.spawnedCount++;
+        if (this.plan.boss && this.spawnedCount === 0) {
+          // Boss wave: lead with the boss (or several at very high waves).
+          for (let i = 0; i < this.plan.bossCount; i++) {
+            this.spawnOne("boss");
+            this.spawnedCount++;
+          }
+        } else {
+          // Spawn a batch so the screen keeps filling as waves climb.
+          const n = Math.min(this.plan.batch, this.plan.count - this.spawnedCount);
+          for (let i = 0; i < n; i++) {
+            this.spawnOne(pickType(this.plan.weights));
+            this.spawnedCount++;
+          }
+        }
         this.spawnTimer = this.plan.spawnInterval * (0.7 + Math.random() * 0.6);
       }
     }
@@ -221,8 +233,7 @@ export class Game {
     this.ui.updateHud(this);
   }
 
-  spawnZombie() {
-    const type = this.plan.boss && this.spawnedCount === 0 ? "boss" : pickType(this.plan.weights);
+  spawnOne(type) {
     const margin = 40;
     const x = margin + Math.random() * (this.world.w - margin * 2);
     const z = new Zombie(
@@ -237,6 +248,11 @@ export class Game {
       if (b.dead) continue;
       for (const z of this.zombies) {
         if (z.dead) continue;
+        // Cheap prune: bullets travel near-vertically, so if both ends of the
+        // travel segment are on the same side of the zombie and far in x, skip
+        // the full test. Keeps high zombie counts cheap without missing hits.
+        const dxc = b.x - z.x, dxp = b.px - z.x;
+        if (dxc * dxp > 0 && Math.min(Math.abs(dxc), Math.abs(dxp)) > z.radius + b.radius + 4) continue;
         // Swept test: measure the bullet's whole travel segment this frame
         // against the zombie so fast bullets can't tunnel through. The hit
         // radius is padded a little to match the drawn emoji size.
