@@ -5,7 +5,7 @@
 // fresh response, and fall back to cache only when offline. This avoids the
 // classic "stale forever" trap of a cache-first worker. Bump VERSION on a
 // deploy to also purge old caches on activate.
-const VERSION = "v2";
+const VERSION = "v4";
 const CACHE = `laststand-${VERSION}`;
 const ASSETS = [
   "./",
@@ -20,6 +20,8 @@ const ASSETS = [
   "./js/entities.js",
   "./js/levels.js",
   "./js/weapons.js",
+  "./js/audio.js",
+  "./js/haptics.js",
 ];
 
 self.addEventListener("install", (e) => {
