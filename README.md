@@ -47,6 +47,9 @@ Any static server works (`npx serve`, VS Code Live Server, etc.).
   everything in a wide swath — your "get out of jail" button for crowds and bosses.
 - **Sound** — all sound effects are synthesized at runtime with the Web Audio
   API (no audio files). Toggle with the 🔊 button; the choice is saved.
+- **Haptics** — short vibrations on phones when a zombie reaches your base, a
+  titan/boss arrives, or you're overrun (Android browsers; iOS Safari has no
+  web-vibration support, so it's a no-op there). On by default, can be disabled.
 - Best wave reached is saved in `localStorage`.
 
 ## Project structure
@@ -65,7 +68,8 @@ js/
   weapons.js            Weapon tiers and effective-stat math
   input.js              Keyboard + pointer/touch input
   ui.js                 HUD, shop, menu/overlay management
-  audio.js              Web Audio engine: synthesized SFX + procedural music
+  audio.js              Web Audio engine: synthesized SFX
+  haptics.js            Phone vibration feedback (Web Vibration API)
 ```
 
 The rendering is done entirely with canvas primitives and emoji, so there are no

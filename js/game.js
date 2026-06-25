@@ -11,12 +11,13 @@ export const ABILITIES = {
 const BEST_KEY = "laststand_best_wave";
 
 export class Game {
-  constructor(canvas, input, ui, audio = null) {
+  constructor(canvas, input, ui, audio = null, haptics = null) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.input = input;
     this.ui = ui;
     this.audio = audio;
+    this.haptics = haptics;
     this.world = { w: 0, h: 0, roadTop: 0, defenseLine: 0 };
     this.state = "menu";
     this.bestWave = parseInt(localStorage.getItem(BEST_KEY) || "1", 10);
@@ -92,10 +93,12 @@ export class Game {
       this.titans.push(new Titan("godzilla", this.world.w * 0.35, this.world));
       this.shake = 14;
       this.audio?.titan();
+      this.haptics?.heavy();
     } else if (id === "kong") {
       this.titans.push(new Titan("kong", this.world.w * 0.65, this.world));
       this.shake = 14;
       this.audio?.titan();
+      this.haptics?.heavy();
     }
   }
 
@@ -171,6 +174,7 @@ export class Game {
             this.spawnedCount++;
           }
           this.audio?.bossSpawn();
+          this.haptics?.heavy();
         } else {
           // Spawn a batch so the screen keeps filling as waves climb.
           const n = Math.min(this.plan.batch, this.plan.count - this.spawnedCount);
@@ -194,6 +198,7 @@ export class Game {
         z.dead = true;
         this.shake = Math.max(this.shake, 6);
         this.audio?.playerHit();
+        this.haptics?.hit();
         for (let i = 0; i < 4; i++) this.particles.push(new Particle(z.x, z.y, "#e53935"));
       }
     }
@@ -281,6 +286,7 @@ export class Game {
   endRun() {
     this.state = "gameover";
     this.audio?.gameOver();
+    this.haptics?.gameOver();
     if (this.wave > this.bestWave) {
       this.bestWave = this.wave;
       localStorage.setItem(BEST_KEY, String(this.bestWave));

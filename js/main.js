@@ -2,12 +2,14 @@ import { Game } from "./game.js";
 import { UI } from "./ui.js";
 import { Input } from "./input.js";
 import { AudioEngine } from "./audio.js";
+import { Haptics } from "./haptics.js";
 
 const canvas = document.getElementById("game");
 const input = new Input(canvas);
 const ui = new UI();
 const audio = new AudioEngine();
-const game = new Game(canvas, input, ui, audio);
+const haptics = new Haptics();
+const game = new Game(canvas, input, ui, audio, haptics);
 ui.bind(game);
 ui.audio = audio;
 
