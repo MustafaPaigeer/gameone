@@ -45,8 +45,8 @@ Any static server works (`npx serve`, VS Code Live Server, etc.).
   Minigun), +Damage, +Fire Rate, extra Soldier (up to 5 guns), Full Heal, +Max HP.
 - **Titan allies** are big cooldown abilities that march down the road smashing
   everything in a wide swath — your "get out of jail" button for crowds and bosses.
-- **Sound** — all SFX and the music loop are synthesized at runtime with the Web
-  Audio API (no audio files). Toggle with the 🔊 button; the choice is saved.
+- **Sound** — all sound effects are synthesized at runtime with the Web Audio
+  API (no audio files). Toggle with the 🔊 button; the choice is saved.
 - Best wave reached is saved in `localStorage`.
 
 ## Project structure

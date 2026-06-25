@@ -133,81 +133,10 @@ export class AudioEngine {
     this.tone(1320, 0.1, { type: "square", gain: 0.12, delay: 0.06 });
   }
 
-  // ---- ambient music: a low evolving drone + sparse, non-rhythmic tones ----
-  // No beat/loop to grate on the ear — just atmosphere under the action.
-  startMusic() {
-    if (!this.ctx || this.drone) return;
-    const t = this.ctx.currentTime;
-
-    const out = this.ctx.createGain();
-    out.gain.setValueAtTime(0.0001, t);
-    out.gain.exponentialRampToValueAtTime(0.16, t + 2.5); // slow fade-in
-    out.connect(this.musicGain);
-
-    const lp = this.ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 360;
-    lp.connect(out);
-
-    // Layered low drone, slightly detuned so it breathes instead of sitting flat.
-    const freqs = [55, 82.5, 110]; // A1, ~E2, A2
-    const oscs = freqs.map((f, i) => {
-      const o = this.ctx.createOscillator();
-      o.type = i === 2 ? "sine" : "triangle";
-      o.frequency.value = f;
-      o.detune.value = (i - 1) * 6;
-      o.connect(lp);
-      o.start(t);
-      return o;
-    });
-
-    // Very slow cutoff sweep (~20s cycle) gives it a sense of motion.
-    const lfo = this.ctx.createOscillator();
-    const lfoGain = this.ctx.createGain();
-    lfo.frequency.value = 0.05;
-    lfoGain.gain.value = 110;
-    lfo.connect(lfoGain); lfoGain.connect(lp.frequency);
-    lfo.start(t);
-
-    this.drone = { out, oscs, lfo };
-    this.scheduleAmbientNote();
-  }
-
-  scheduleAmbientNote() {
-    const gap = 3500 + Math.random() * 4500; // 3.5–8s, irregular
-    this.musicTimer = setTimeout(() => {
-      if (this.ctx && !this.muted && this.drone) {
-        const scale = [220, 261.63, 293.66, 329.63, 392, 440]; // A natural minor
-        const f = scale[Math.floor(Math.random() * scale.length)];
-        const t = this.ctx.currentTime;
-        const o = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        o.type = "sine";
-        o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.055, t + 0.9);  // soft swell
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8); // long fade
-        o.connect(g); g.connect(this.musicGain);
-        o.start(t); o.stop(t + 3);
-      }
-      if (this.drone) this.scheduleAmbientNote();
-    }, gap);
-  }
-
-  stopMusic() {
-    if (this.musicTimer) { clearTimeout(this.musicTimer); this.musicTimer = null; }
-    if (this.drone) {
-      const t = this.ctx ? this.ctx.currentTime : 0;
-      const { out, oscs, lfo } = this.drone;
-      try {
-        out.gain.cancelScheduledValues(t);
-        out.gain.setValueAtTime(out.gain.value, t);
-        out.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); // fade out, no click
-      } catch { /* ignore */ }
-      const stopAt = t + 0.45;
-      oscs.forEach((o) => { try { o.stop(stopAt); } catch { /* ignore */ } });
-      try { lfo.stop(stopAt); } catch { /* ignore */ }
-      this.drone = null;
-    }
-  }
+  // ---- background music ----
+  // Intentionally disabled: gameplay SFX only. These remain as safe no-ops so
+  // callers don't need to special-case music. (musicGain stays wired up in case
+  // music is reintroduced later.)
+  startMusic() {}
+  stopMusic() {}
 }
