@@ -180,6 +180,7 @@ export class UI {
       if (affordable && item.action) {
         card.addEventListener("click", () => {
           if (item.action()) {
+            this.audio?.buy();
             this.flashCoins();
             this.renderShop();
           }

@@ -155,7 +155,7 @@ html, body {
   pointer-events: none;
 }
 
-#pause-btn {
+#pause-btn, #mute-btn {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0) + 70px);
   right: 16px;
@@ -167,6 +167,9 @@ html, body {
   font-size: 18px;
   cursor: pointer;
   pointer-events: auto;
+}
+#mute-btn {
+  top: calc(env(safe-area-inset-top, 0) + 118px);
 }
 
 /* ---------- Overlays / Menus ---------- */

@@ -1,22 +1,27 @@
 import { Game } from "./game.js";
 import { UI } from "./ui.js";
 import { Input } from "./input.js";
+import { AudioEngine } from "./audio.js";
 
 const canvas = document.getElementById("game");
 const input = new Input(canvas);
 const ui = new UI();
-const game = new Game(canvas, input, ui);
+const audio = new AudioEngine();
+const game = new Game(canvas, input, ui, audio);
 ui.bind(game);
+ui.audio = audio;
 
 // Debug handle: inspect or tweak the running game from the browser console.
 window.game = game;
 
 // ---------------------------------------------------------------- buttons
 document.getElementById("start-btn").addEventListener("click", () => {
+  audio.init(); // first user gesture — unlocks/starts the audio context
   game.newRun();
   ui.startGame();
 });
 document.getElementById("restart-btn").addEventListener("click", () => {
+  audio.init();
   game.newRun();
   ui.startGame();
 });
@@ -30,9 +35,12 @@ const togglePause = () => {
   if (game.state === "playing") {
     game.state = "paused";
     ui.showPause(true);
+    audio.stopMusic();
   } else if (game.state === "paused") {
     game.state = "playing";
     ui.showPause(false);
+    audio.resume();
+    audio.startMusic();
   }
 };
 pauseBtn.addEventListener("click", togglePause);
@@ -40,7 +48,18 @@ document.getElementById("resume-btn").addEventListener("click", togglePause);
 document.getElementById("quit-btn").addEventListener("click", () => {
   game.state = "menu";
   ui.showPause(false);
+  audio.stopMusic();
   ui.showMenu();
+});
+
+// Sound on/off toggle (persists via localStorage in the audio engine).
+const muteBtn = document.getElementById("mute-btn");
+const renderMute = () => { muteBtn.textContent = audio.muted ? "🔇" : "🔊"; };
+renderMute();
+muteBtn.addEventListener("click", () => {
+  audio.init();
+  audio.toggleMute();
+  renderMute();
 });
 window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
