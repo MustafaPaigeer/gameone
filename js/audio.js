@@ -132,6 +132,14 @@ export class AudioEngine {
     this.tone(880, 0.08, { type: "square", gain: 0.16 });
     this.tone(1320, 0.1, { type: "square", gain: 0.12, delay: 0.06 });
   }
+  gate(good) {
+    if (good) {
+      this.tone(660, 0.09, { type: "square", gain: 0.16 });
+      this.tone(990, 0.12, { type: "square", gain: 0.13, delay: 0.07 }); // rising chime
+    } else {
+      this.tone(170, 0.22, { type: "sawtooth", gain: 0.22, sweepTo: 70 }); // low thunk
+    }
+  }
 
   // ---- background music ----
   // Intentionally disabled: gameplay SFX only. These remain as safe no-ops so

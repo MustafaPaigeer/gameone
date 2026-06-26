@@ -1,5 +1,5 @@
-import { Player, Zombie, Particle, Titan, Explosion } from "./entities.js";
-import { buildWave, pickType } from "./levels.js";
+import { Player, Zombie, Particle, Titan, Explosion, GateSet, applyGateOp } from "./entities.js";
+import { buildWave, pickType, makeGateSet, gatesForWave } from "./levels.js";
 import { getWeapon, effectiveStats } from "./weapons.js";
 
 export const ABILITIES = {
@@ -49,6 +49,7 @@ export class Game {
     this.particles = [];
     this.titans = [];
     this.explosions = [];
+    this.gates = [];
     this.coins = 0;
     this.kills = 0;
     this.wave = 0;
@@ -66,6 +67,11 @@ export class Game {
     this.plan = buildWave(wave);
     this.spawnTimer = 0.6;
     this.spawnedCount = 0;
+    // Gate schedule: a few sets descend over the course of the wave.
+    this.gates = [];
+    this.gatesTotal = gatesForWave(wave);
+    this.gatesSpawned = 0;
+    this.gateTimer = 2.5;
     this.state = "playing";
   }
 
@@ -117,20 +123,17 @@ export class Game {
     switch (kind) {
       case "damage": return Math.round(60 * Math.pow(1.55, this.boosts.damageLvl));
       case "firerate": return Math.round(60 * Math.pow(1.55, this.boosts.fireRateLvl));
-      case "squad": return Math.round(120 * Math.pow(1.9, this.player.squadSize - 1));
       case "heal": return 40;
       case "maxhp": return Math.round(70 * Math.pow(1.4, maxhpLvl));
       default: return Infinity;
     }
   }
   buyUpgrade(kind) {
-    if (kind === "squad" && this.player.squadSize >= 5) return false;
     const cost = this.upgradeCost(kind);
     if (this.coins < cost) return false;
     this.coins -= cost;
     if (kind === "damage") this.boosts.damageLvl++;
     else if (kind === "firerate") this.boosts.fireRateLvl++;
-    else if (kind === "squad") this.player.squadSize++;
     else if (kind === "heal") this.player.health = this.player.maxHealth;
     else if (kind === "maxhp") {
       this.player.maxHealth += 25;
@@ -187,6 +190,25 @@ export class Game {
       }
     }
 
+    // number gates descend through the wave
+    if (this.gatesSpawned < this.gatesTotal) {
+      this.gateTimer -= dt;
+      if (this.gateTimer <= 0) {
+        const { left, right } = makeGateSet(this.wave);
+        this.gates.push(new GateSet(this.world, left, right));
+        this.gatesSpawned++;
+        this.gateTimer = 5.5 + Math.random() * 2.5;
+      }
+    }
+    for (const g of this.gates) {
+      const op = g.update(dt, this.player);
+      if (op) {
+        this.player.setArmy(applyGateOp(op, this.player.squadSize));
+        this.audio?.gate(op.good);
+        this.shake = Math.max(this.shake, op.good ? 3 : 6);
+      }
+    }
+
     // bullets
     for (const b of this.bullets) b.update(dt);
 
@@ -229,6 +251,7 @@ export class Game {
     this.zombies = this.zombies.filter((z) => !z.dead);
     this.particles = this.particles.filter((p) => !p.dead);
     this.titans = this.titans.filter((t) => !t.dead);
+    this.gates = this.gates.filter((g) => !g.dead);
     this.explosions = this.explosions.filter((e) => !e.dead);
 
     // death check
@@ -307,6 +330,7 @@ export class Game {
 
     if (this.state === "menu") { ctx.restore(); return; }
 
+    for (const g of this.gates) g.draw(ctx);   // on the road, under everything
     for (const e of this.explosions) e.draw(ctx);
     for (const b of this.bullets) b.draw(ctx);
     for (const z of this.zombies) z.draw(ctx);

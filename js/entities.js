@@ -98,6 +98,9 @@ export class Zombie {
 }
 
 // ---------------------------------------------------------------- Player squad
+export const GUN_CAP = 9;    // max soldiers drawn / firing as distinct guns
+export const ARMY_CAP = 50;  // hard ceiling on army size (keeps DPS sane)
+
 export class Player {
   constructor(x, y) {
     this.x = x; this.y = y;
@@ -107,10 +110,17 @@ export class Player {
     this.speed = 620;           // keyboard speed (px/s)
     this.responsiveness = 26;   // higher = snappier follow (frame-rate independent)
     this.lift = 30;             // squad sits slightly above the pointer/finger
-    this.squadSize = 1;         // visual soldiers; also small fire-rate bonus
+    this.squadSize = 1;         // army count — grown by gates; drives firepower
     this.fireCooldown = 0;
     this.muzzle = 0;            // muzzle-flash timer
     this.hitFlash = 0;
+    this.armyPulse = 0;         // brief scale-up when the count changes (gates)
+  }
+
+  // Clamp + animate the army count when a gate changes it.
+  setArmy(n) {
+    this.squadSize = Math.max(1, Math.min(ARMY_CAP, Math.round(n)));
+    this.armyPulse = 0.35;
   }
   update(dt, input, world) {
     const margin = 34;
@@ -138,16 +148,23 @@ export class Player {
     if (this.fireCooldown > 0) this.fireCooldown -= dt;
     if (this.muzzle > 0) this.muzzle -= dt;
     if (this.hitFlash > 0) this.hitFlash -= dt;
+    if (this.armyPulse > 0) this.armyPulse -= dt;
   }
   // Returns array of bullets if it fired this frame, else null.
+  // Army drives firepower: up to GUN_CAP soldiers fire as distinct guns, and
+  // any army beyond that adds a damage multiplier (so 50 soldiers stay sane).
   tryFire(dt, stats) {
     if (this.fireCooldown > 0) return null;
-    const rate = stats.fireRate * (1 + 0.05 * (this.squadSize - 1));
+    const army = this.squadSize;
+    const guns = Math.min(army, GUN_CAP);
+    const rate = stats.fireRate * (1 + 0.03 * Math.min(army - 1, GUN_CAP));
     this.fireCooldown = 1 / rate;
     this.muzzle = 0.05;
+    const dmgMult = army > GUN_CAP ? 1 + (army - GUN_CAP) * 0.06 : 1;
+    const dmg = stats.damage * dmgMult;
     const bullets = [];
     const gunY = this.y - 18;
-    const positions = this.gunPositions();
+    const positions = this.gunPositions(guns);
     for (const gx of positions) {
       for (let i = 0; i < stats.bullets; i++) {
         const angle =
@@ -157,18 +174,17 @@ export class Player {
             : (Math.random() - 0.5) * stats.spread);
         const vx = Math.cos(angle) * stats.bulletSpeed;
         const vy = Math.sin(angle) * stats.bulletSpeed;
-        bullets.push(new Bullet(gx, gunY, vx, vy, stats.damage, stats.color));
+        bullets.push(new Bullet(gx, gunY, vx, vy, dmg, stats.color));
       }
     }
     return bullets;
   }
-  gunPositions() {
-    const n = Math.min(this.squadSize, 5);
-    if (n === 1) return [this.x];
-    const spread = 18;
+  gunPositions(guns = Math.min(this.squadSize, GUN_CAP)) {
+    if (guns <= 1) return [this.x];
+    const spread = 16;
     const out = [];
-    for (let i = 0; i < n; i++) {
-      out.push(this.x + (i - (n - 1) / 2) * spread);
+    for (let i = 0; i < guns; i++) {
+      out.push(this.x + (i - (guns - 1) / 2) * spread);
     }
     return out;
   }
@@ -207,6 +223,92 @@ export class Player {
       }
       ctx.restore();
     }
+
+    // Army count — the big growing number, à la the reference game.
+    const scale = 1 + Math.max(0, this.armyPulse) * 0.9;
+    const fs = 26 * scale;
+    ctx.save();
+    ctx.font = `900 ${fs}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(0,0,0,0.8)";
+    ctx.fillStyle = this.armyPulse > 0 ? "#ffd54f" : "#fff";
+    const ny = this.y - 44;
+    ctx.strokeText(this.squadSize, this.x, ny);
+    ctx.fillText(this.squadSize, this.x, ny);
+    ctx.restore();
+  }
+}
+
+// ---------------------------------------------------------------- Number gate
+// A pair of gates splitting the road in half. The squad passes through one and
+// its operation is applied to the army count — the reference game's core hook.
+export class GateSet {
+  constructor(world, left, right) {
+    this.world = world;
+    this.left = left;     // { kind, value, label, good }
+    this.right = right;
+    this.mid = world.w / 2;
+    this.y = -34;
+    this.speed = 155;
+    this.h = 44;
+    this.applied = false;
+    this.dead = false;
+    this.chosen = null;
+    this.flash = 0;
+  }
+  // Returns the chosen op exactly once, when the gate line crosses the squad.
+  update(dt, player) {
+    this.y += this.speed * dt;
+    let result = null;
+    if (!this.applied && this.y >= player.y) {
+      this.applied = true;
+      this.chosen = player.x < this.mid ? "left" : "right";
+      result = this.chosen === "left" ? this.left : this.right;
+      this.flash = 0.3;
+    }
+    if (this.flash > 0) this.flash -= dt;
+    if (this.y > this.world.h + 60) this.dead = true;
+    return result;
+  }
+  draw(ctx) {
+    const w = this.world.w;
+    const panels = [
+      { op: this.left, x0: 0, x1: this.mid, side: "left" },
+      { op: this.right, x0: this.mid, x1: w, side: "right" },
+    ];
+    ctx.save();
+    ctx.font = "900 24px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const p of panels) {
+      const rgb = p.op.good ? "0,200,83" : "229,57,53";
+      const pw = p.x1 - p.x0;
+      const picked = this.applied && this.chosen === p.side;
+      ctx.fillStyle = `rgba(${rgb},${picked ? 0.4 : 0.2})`;
+      ctx.fillRect(p.x0 + 4, this.y, pw - 8, this.h);
+      ctx.strokeStyle = `rgba(${rgb},0.95)`;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(p.x0 + 4, this.y, pw - 8, this.h);
+      const cx = (p.x0 + p.x1) / 2;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.fillStyle = "#fff";
+      ctx.strokeText(p.op.label, cx, this.y + this.h / 2);
+      ctx.fillText(p.op.label, cx, this.y + this.h / 2);
+    }
+    ctx.restore();
+  }
+}
+
+export function applyGateOp(op, army) {
+  switch (op.kind) {
+    case "add": return army + op.value;
+    case "sub": return army - op.value;
+    case "mul": return army * op.value;
+    case "div": return army / op.value;
+    default: return army;
   }
 }
 

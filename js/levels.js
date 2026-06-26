@@ -66,6 +66,32 @@ export function buildWave(wave) {
   };
 }
 
+// ---- Number gates ----------------------------------------------------------
+// How many gate sets descend during a wave (more in later waves, capped).
+export function gatesForWave(wave) {
+  return Math.min(3, 1 + Math.floor(wave / 4));
+}
+
+function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
+function mkOp(kind, value) {
+  const labels = { add: `+${value}`, mul: `×${value}`, sub: `−${value}`, div: `÷${value}` };
+  return { kind, value, label: labels[kind], good: kind === "add" || kind === "mul" };
+}
+
+// A gate set is always solvable: at least one side grows the army, so it's a
+// choice of how much (or grow vs. shrink), never a guaranteed loss.
+export function makeGateSet(wave) {
+  const addVal = () => rint(3, 7 + Math.floor(wave / 2));
+  const pos = () => (Math.random() < 0.72 ? mkOp("add", addVal()) : mkOp("mul", 2));
+  const neg = () => (Math.random() < 0.6 ? mkOp("sub", rint(3, 6)) : mkOp("div", 2));
+
+  const roll = Math.random();
+  if (roll < 0.6) return { left: pos(), right: pos() };       // pick the bigger
+  if (roll < 0.8) return { left: pos(), right: neg() };       // grow vs shrink
+  return { left: neg(), right: pos() };
+}
+
 export function pickType(weights, rng = Math.random) {
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   let r = rng() * total;

@@ -123,12 +123,6 @@ export class UI {
       action: () => g.buyUpgrade("firerate"),
     });
     items.push({
-      emoji: "👥", name: "Squad Size", desc: "Add another shooter",
-      cost: g.upgradeCost("squad"), meta: this.pips(g.player.squadSize - 1, 4),
-      maxed: g.player.squadSize >= 5,
-      action: () => g.buyUpgrade("squad"),
-    });
-    items.push({
       emoji: "❤️", name: "Repair", desc: "Restore full health",
       cost: g.upgradeCost("heal"), meta: `${Math.round(g.player.health)}/${g.player.maxHealth} HP`,
       disabled: fullHp, disabledLabel: "Full HP",

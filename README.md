@@ -38,11 +38,17 @@ Any static server works (`npx serve`, VS Code Live Server, etc.).
 
 - **Waves** get harder each round: more zombies, tankier, faster, and spawning
   quicker. Every **5th wave is a boss wave** (a giant 👹).
-- **Zombie types**: walkers (slow), runners (fast/weak), brutes (tanky), bosses.
+- **Zombie types**: walkers (slow), runners (fast/weak), brutes (tanky), tanks
+  (giant sponges), swarms (tiny/fast), bosses.
+- **Number gates** descend the road in pairs (e.g. `+8` / `×2` / `−4` / `÷2`).
+  Steer the squad into the side you want — it grows or shrinks your **army**,
+  which is your firepower (more soldiers = more guns, then a damage bump). At
+  least one side is always a gain, so it's a choice of how much, not a coin flip.
 - **Coins** drop from kills and a wave-clear bonus. Spend them in the shop
   between waves.
 - **Shop upgrades**: next weapon tier (Pistol → SMG → Shotgun → Assault Rifle →
-  Minigun), +Damage, +Fire Rate, extra Soldier (up to 5 guns), Full Heal, +Max HP.
+  Minigun), +Damage, +Fire Rate, Full Heal, +Max HP. (Squad size comes from
+  gates, not the shop.)
 - **Titan allies** are big cooldown abilities that march down the road smashing
   everything in a wide swath — your "get out of jail" button for crowds and bosses.
 - **Sound** — all sound effects are synthesized at runtime with the Web Audio
@@ -100,7 +106,5 @@ orientation to portrait in the native config.
 ## Ideas for future upgrades
 
 - Sprite art / animation frames in place of emoji.
-- More creative allies (tank, drone swarm, airstrike chains).
-- Number "gates" across the road that multiply/boost the squad (as in the
-  reference game).
+- More creative allies (drone swarm, airstrike chains).
 - Persistent meta-progression between runs.
