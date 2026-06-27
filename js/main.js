@@ -3,6 +3,7 @@ import { UI } from "./ui.js";
 import { Input } from "./input.js";
 import { AudioEngine } from "./audio.js";
 import { Haptics } from "./haptics.js";
+import { Renderer3D } from "./render3d.js";
 
 const canvas = document.getElementById("game");
 const input = new Input(canvas);
@@ -12,6 +13,9 @@ const haptics = new Haptics();
 const game = new Game(canvas, input, ui, audio, haptics);
 ui.bind(game);
 ui.audio = audio;
+
+// 3D renderer draws the scene from live game state (replaces the 2D draw).
+const renderer3d = new Renderer3D(document.getElementById("game-shell"));
 
 // Debug handle: inspect or tweak the running game from the browser console.
 window.game = game;
@@ -77,7 +81,8 @@ function frame(now) {
   last = now;
   if (dt > 0.05) dt = 0.05; // clamp after tab switches
   game.update(dt);
-  game.render();
+  renderer3d.sync(game, dt);
+  renderer3d.render();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

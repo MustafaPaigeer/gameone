@@ -70,10 +70,22 @@ js/
   ui.js                 HUD, shop, menu/overlay management
   audio.js              Web Audio engine: synthesized SFX
   haptics.js            Phone vibration feedback (Web Vibration API)
+  render3d.js           Three.js renderer (3D view of the live game state)
+vendor/three/           Vendored Three.js ESM build (offline-capable)
 ```
 
-The rendering is done entirely with canvas primitives and emoji, so there are no
-external art assets to manage — easy to extend by swapping in sprites later.
+## 3D renderer
+
+This branch renders the game in **3D with Three.js** instead of the 2D canvas.
+The simulation in `game.js`/`entities.js` is unchanged — `render3d.js` reads the
+live game state each frame (`Renderer3D.sync(game, dt)`) and draws a third-person
+view down a bridge: low-poly soldiers, zombies (per type), titans, bullet tracers,
+muzzle flashes and explosions, with the existing DOM HUD layered on top. Three.js
+is vendored locally so the PWA still works offline.
+
+Notes / follow-ups: models are procedural low-poly placeholders (swap in rigged
+`.glb` characters later); the renderer caps drawn zombies for performance — large
+hordes still need instancing/LOD (see `3D_SPEC.md`) to hit the mobile frame budget.
 
 ## Roadmap → native mobile
 
